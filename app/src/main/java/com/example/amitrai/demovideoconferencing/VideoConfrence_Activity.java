@@ -8,7 +8,6 @@ import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.View;
-import android.widget.CompoundButton;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
@@ -274,25 +273,25 @@ public class VideoConfrence_Activity extends AppCompatActivity implements View.O
         adapter.notifyDataSetChanged();
 
         int position = mSubscribers.size() - 1;
-        int id = getResources().getIdentifier("subscriberview" + (new Integer(position)).toString(), "id", VideoConfrence_Activity.this.getPackageName());
+//        int id = getResources().getIdentifier("subscriberview" + (new Integer(position)).toString(), "id", VideoConfrence_Activity.this.getPackageName());
         RelativeLayout subscriberViewContainer = (RelativeLayout) findViewById(R.id.layout_selected_user);
 
         subscriber.setStyle(BaseVideoRenderer.STYLE_VIDEO_SCALE, BaseVideoRenderer.STYLE_VIDEO_FILL);
         if(subscriber.getView() != null)
             subscriberViewContainer.addView(subscriber.getView());
 
-        id = getResources().getIdentifier("toggleAudioSubscriber" + (new Integer(position)).toString(), "id", VideoConfrence_Activity.this.getPackageName());
-        final ToggleButton toggleAudio = (ToggleButton) findViewById(id);
-        toggleAudio.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                if (isChecked) {
-                    subscriber.setSubscribeToAudio(true);
-                } else {
-                    subscriber.setSubscribeToAudio(false);
-                }
-            }
-        });
-        toggleAudio.setVisibility(View.VISIBLE);
+//        id = getResources().getIdentifier("toggleAudioSubscriber" + (new Integer(position)).toString(), "id", VideoConfrence_Activity.this.getPackageName());
+//        final ToggleButton toggleAudio = (ToggleButton) findViewById(id);
+//        toggleAudio.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+//            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+//                if (isChecked) {
+//                    subscriber.setSubscribeToAudio(true);
+//                } else {
+//                    subscriber.setSubscribeToAudio(false);
+//                }
+//            }
+//        });
+//        toggleAudio.setVisibility(View.VISIBLE);
     }
 
     @Override
