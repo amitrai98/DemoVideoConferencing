@@ -3,18 +3,21 @@ package com.example.amitrai.demovideoconferencing;
 import android.Manifest;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
+import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
-import android.widget.ToggleButton;
 
 import com.example.amitrai.demovideoconferencing.adapters.ViewerAdapter;
+import com.example.amitrai.demovideoconferencing.listeners.RecyclerviewItemclickListener;
 import com.example.amitrai.demovideoconferencing.modal.Audiance;
+import com.example.amitrai.demovideoconferencing.modal.UserBin;
 import com.opentok.android.BaseVideoRenderer;
 import com.opentok.android.OpentokError;
 import com.opentok.android.Publisher;
@@ -31,11 +34,14 @@ import pub.devrel.easypermissions.AfterPermissionGranted;
 import pub.devrel.easypermissions.AppSettingsDialog;
 import pub.devrel.easypermissions.EasyPermissions;
 
+import static com.example.amitrai.demovideoconferencing.R.id.layout_selected_user;
+
+
 public class VideoConfrence_Activity extends AppCompatActivity implements View.OnClickListener, EasyPermissions.PermissionCallbacks,
         Publisher.PublisherListener,
-        Session.SessionListener{
+        Session.SessionListener, RecyclerviewItemclickListener {
 
-    private RelativeLayout layout_selected_user, layout_me;
+    private RelativeLayout layout_selected, layout_me;
     private ImageView img_swipe, img_end_call, img_mute;
     private RecyclerView recycle_viewers = null;
 
@@ -54,6 +60,15 @@ public class VideoConfrence_Activity extends AppCompatActivity implements View.O
 
     private RelativeLayout mPublisherViewContainer;
 
+    private RecyclerviewItemclickListener listener = null;
+
+    private UserBin userBin = null;
+
+    public static String CURRENT_TOKEN = "current_token";
+    public static String CURRENT_SESSION_ID = "current_session_id";
+
+
+
 
 
     @Override
@@ -61,7 +76,14 @@ public class VideoConfrence_Activity extends AppCompatActivity implements View.O
         super.onCreate(savedInstanceState);
         setContentView(R.layout.call_view);
 
-        init();
+        if(getIntent().hasExtra(CURRENT_TOKEN)){
+            String token = getIntent().getStringExtra(CURRENT_TOKEN);
+            String session_id = getIntent().getStringExtra(CURRENT_SESSION_ID);
+            userBin = new UserBin("user", token, session_id);
+
+            init();
+        }else
+            finish();
     }
 
 
@@ -69,15 +91,17 @@ public class VideoConfrence_Activity extends AppCompatActivity implements View.O
      * initialize view elements
      */
     private void init(){
-        layout_selected_user = (RelativeLayout) findViewById(R.id.layout_selected_user);
+        layout_selected = (RelativeLayout) findViewById(R.id.layout_selected);
         mPublisherViewContainer = (RelativeLayout) findViewById(R.id.layout_me);
         img_swipe = (ImageView) findViewById(R.id.img_swipe);
         img_end_call = (ImageView) findViewById(R.id.img_end_call);
         img_mute = (ImageView) findViewById(R.id.img_mute);
         recycle_viewers = (RecyclerView) findViewById(R.id.recycle_viewers);
         RecyclerView.LayoutManager manager = new LinearLayoutManager(getApplicationContext(),
-                        LinearLayoutManager.HORIZONTAL, false);
+                LinearLayoutManager.HORIZONTAL, false);
         recycle_viewers.setLayoutManager(manager);
+
+        listener = this;
 
 
         img_swipe.setOnClickListener(this);
@@ -94,8 +118,9 @@ public class VideoConfrence_Activity extends AppCompatActivity implements View.O
 //        list_audiance.add(new Audiance("user 5", AppConstants.API_KEY, AppConstants.SESSION_ID, AppConstants.TOKEN_U5));
 
 
-        adapter = new ViewerAdapter(list_audiance);
+        adapter = new ViewerAdapter(list_audiance, listener);
         recycle_viewers.setAdapter(adapter);
+
 
         requestPermissions();
 
@@ -121,7 +146,7 @@ public class VideoConfrence_Activity extends AppCompatActivity implements View.O
 
                 break;
 
-            case R.id.layout_selected_user:
+            case layout_selected_user:
 
                 break;
         }
@@ -131,7 +156,9 @@ public class VideoConfrence_Activity extends AppCompatActivity implements View.O
      * disconnects the on going call
      */
     private void endCall(){
-
+        if(mSession != null)
+            mSession.disconnect();
+        finish();
     }
 
     /**
@@ -158,8 +185,10 @@ public class VideoConfrence_Activity extends AppCompatActivity implements View.O
                 return;
             }
             if (mPublisher.getPublishAudio()) {
+                img_mute.setImageResource(R.drawable.mic_no);
                 mPublisher.setPublishAudio(false);
             } else {
+                img_mute.setImageResource(R.drawable.mic);
                 mPublisher.setPublishAudio(true);
             }
         }catch (Exception exp){
@@ -207,9 +236,18 @@ public class VideoConfrence_Activity extends AppCompatActivity implements View.O
                 Manifest.permission.RECORD_AUDIO
         };
         if (EasyPermissions.hasPermissions(this, perms)) {
-            mSession = new Session(VideoConfrence_Activity.this, AppConstants.API_KEY, AppConstants.SESSION_ID);
+            mSession = new Session(VideoConfrence_Activity.this, AppConstants.API_KEY, userBin.getSESSION_ID());
             mSession.setSessionListener(this);
-            mSession.connect(AppConstants.TOKEN);
+            if(userBin != null && userBin.getTOKEN() != null)
+                mSession.connect(userBin.getTOKEN());
+            else{
+                View view = findViewById(R.id.layout_parent);
+                Snackbar snackbar = Snackbar
+                        .make(view, "Invalid Token.", Snackbar.LENGTH_LONG);
+
+                snackbar.show();
+            }
+
         } else {
             EasyPermissions.requestPermissions(this, getString(R.string.rationale_video_app), RC_VIDEO_APP_PERM, perms);
         }
@@ -252,6 +290,8 @@ public class VideoConfrence_Activity extends AppCompatActivity implements View.O
         Log.d(TAG, "onDisconnected: disconnected from session " + session.getSessionId());
 
         mSession = null;
+
+        finish();
     }
 
     @Override
@@ -268,17 +308,15 @@ public class VideoConfrence_Activity extends AppCompatActivity implements View.O
         mSubscribers.add(subscriber);
         mSubscriberStreams.put(stream, subscriber);
 
-        list_audiance.add(new Audiance("user 1", AppConstants.API_KEY, AppConstants.SESSION_ID, AppConstants.TOKEN_U1));
+        list_audiance.add(new Audiance("user 1", subscriber));
+
+        if(list_audiance.size() == 1){
+            selectUser(list_audiance.get(0).getSubscriber());
+        }
 
         adapter.notifyDataSetChanged();
 
-        int position = mSubscribers.size() - 1;
-//        int id = getResources().getIdentifier("subscriberview" + (new Integer(position)).toString(), "id", VideoConfrence_Activity.this.getPackageName());
-        RelativeLayout subscriberViewContainer = (RelativeLayout) findViewById(R.id.layout_selected_user);
 
-        subscriber.setStyle(BaseVideoRenderer.STYLE_VIDEO_SCALE, BaseVideoRenderer.STYLE_VIDEO_FILL);
-        if(subscriber.getView() != null)
-            subscriberViewContainer.addView(subscriber.getView());
 
 //        id = getResources().getIdentifier("toggleAudioSubscriber" + (new Integer(position)).toString(), "id", VideoConfrence_Activity.this.getPackageName());
 //        final ToggleButton toggleAudio = (ToggleButton) findViewById(id);
@@ -303,19 +341,27 @@ public class VideoConfrence_Activity extends AppCompatActivity implements View.O
             return;
         }
 
-        int position = mSubscribers.indexOf(subscriber);
-        int id = getResources().getIdentifier("subscriberview" + (new Integer(position)).toString(), "id", VideoConfrence_Activity.this.getPackageName());
+        for (int i = 0; i<list_audiance.size(); i++){
+            if(list_audiance.get(i).getSubscriber().getStream().getStreamId().equalsIgnoreCase(stream.getStreamId())){
+                list_audiance.remove(i);
+            }
+        }
 
-        mSubscribers.remove(subscriber);
-        mSubscriberStreams.remove(stream);
+        adapter.notifyDataSetChanged();
 
-        RelativeLayout subscriberViewContainer = (RelativeLayout) findViewById(id);
-        subscriberViewContainer.removeView(subscriber.getView());
-
-        id = getResources().getIdentifier("toggleAudioSubscriber" + (new Integer(position)).toString(), "id", VideoConfrence_Activity.this.getPackageName());
-        final ToggleButton toggleAudio = (ToggleButton) findViewById(id);
-        toggleAudio.setOnCheckedChangeListener(null);
-        toggleAudio.setVisibility(View.INVISIBLE);
+//        int position = mSubscribers.indexOf(subscriber);
+//        int id = getResources().getIdentifier("subscriberview" + (new Integer(position)).toString(), "id", VideoConfrence_Activity.this.getPackageName());
+//
+//        mSubscribers.remove(subscriber);
+//        mSubscriberStreams.remove(stream);
+//
+//        RelativeLayout subscriberViewContainer = (RelativeLayout) findViewById(id);
+//        subscriberViewContainer.removeView(subscriber.getView());
+//
+//        id = getResources().getIdentifier("toggleAudioSubscriber" + (new Integer(position)).toString(), "id", VideoConfrence_Activity.this.getPackageName());
+//        final ToggleButton toggleAudio = (ToggleButton) findViewById(id);
+//        toggleAudio.setOnCheckedChangeListener(null);
+//        toggleAudio.setVisibility(View.INVISIBLE);
     }
 
     @Override
@@ -325,6 +371,7 @@ public class VideoConfrence_Activity extends AppCompatActivity implements View.O
         Toast.makeText(this, "Session error. See the logcat please.", Toast.LENGTH_LONG).show();
         finish();
     }
+
 
 
     private void disconnectSession() {
@@ -348,5 +395,52 @@ public class VideoConfrence_Activity extends AppCompatActivity implements View.O
             mPublisher = null;
         }
         mSession.disconnect();
+    }
+
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+
+//        mSession.disconnect();
+    }
+
+    @Override
+    public void onItemClickListener(int position) {
+        Log.e(TAG, "item click received at "+position);
+        if(list_audiance.get(position).getSubscriber() != null)
+            selectUser(list_audiance.get(position).getSubscriber());
+    }
+
+    /**
+     * selects user to the main view.
+     */
+    private void selectUser(@NonNull Subscriber subscriber){
+        try {
+            subscriber.setStyle(BaseVideoRenderer.STYLE_VIDEO_SCALE, BaseVideoRenderer.STYLE_VIDEO_FILL);
+            ViewGroup view = (ViewGroup) subscriber.getView().getParent();
+            ViewGroup viewGroup = (ViewGroup) layout_selected.getParent();
+
+            if (view != null) {
+                ViewGroup parent = (ViewGroup) view.getParent();
+                if (parent != null) {
+                    parent.removeView(view);
+                }
+            }
+            if(view != null){
+                RelativeLayout.LayoutParams lp = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT,RelativeLayout.LayoutParams.MATCH_PARENT);
+                layout_selected.addView(view);
+                layout_selected.setLayoutParams(lp);
+                view.setLayoutParams(lp);
+
+            }
+        }catch (Exception exp){
+            exp.printStackTrace();
+        }
     }
 }

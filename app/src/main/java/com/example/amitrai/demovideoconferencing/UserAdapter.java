@@ -7,6 +7,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import com.example.amitrai.demovideoconferencing.listeners.RecyclerviewItemclickListener;
 import com.example.amitrai.demovideoconferencing.modal.UserBin;
 
 import java.util.List;
@@ -19,6 +20,7 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserCell>{
 
     private List<UserBin> list_userbin;
     private String TAG = getClass().getSimpleName();
+    private RecyclerviewItemclickListener listener;
 
     public class UserCell extends RecyclerView.ViewHolder{
         public TextView txt_username;
@@ -32,8 +34,9 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserCell>{
     }
 
 
-    public UserAdapter(List<UserBin> list_userbin){
+    public UserAdapter(List<UserBin> list_userbin, RecyclerviewItemclickListener listener){
         this.list_userbin = list_userbin;
+        this.listener = listener;
     }
 
 

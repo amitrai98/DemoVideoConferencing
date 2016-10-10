@@ -8,6 +8,7 @@ import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 
 import com.example.amitrai.demovideoconferencing.modal.UserBin;
 
@@ -108,12 +109,21 @@ public class MainActivity extends AppCompatActivity
 //        for (int i=0 ; i<10 ; i++){
 //            userbin.add(new UserBin("user "+i));
 //        }
-//        adapter = new UserAdapter(userbin);
+//        adapter = new UserListAdapter(userbin);
 //
 //        recycler_view.setAdapter(adapter);
 //        RecyclerView.LayoutManager mLayoutManager = new LinearLayoutManager(getApplicationContext());
 //        recycler_view.setLayoutManager(mLayoutManager);
 
+
+    }
+
+
+    /**
+     * initiates video call
+     * @param view
+     */
+    public void startCAll(View view){
         Intent i = new Intent(this, VideoConfrence_Activity.class);
         startActivity(i);
     }

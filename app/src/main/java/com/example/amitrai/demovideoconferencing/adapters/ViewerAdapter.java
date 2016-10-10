@@ -8,7 +8,9 @@ import android.widget.FrameLayout;
 import android.widget.TextView;
 
 import com.example.amitrai.demovideoconferencing.R;
+import com.example.amitrai.demovideoconferencing.listeners.RecyclerviewItemclickListener;
 import com.example.amitrai.demovideoconferencing.modal.Audiance;
+import com.opentok.android.BaseVideoRenderer;
 
 import java.util.List;
 
@@ -19,9 +21,11 @@ import java.util.List;
 public class ViewerAdapter extends RecyclerView.Adapter<ViewerAdapter.AudianceViewHolder>{
 
     public List<Audiance> list_audiance;
+    private RecyclerviewItemclickListener listener;
 
-    public ViewerAdapter(List<Audiance> list_audiance){
+    public ViewerAdapter(List<Audiance> list_audiance, RecyclerviewItemclickListener listener){
         this.list_audiance = list_audiance;
+        this.listener = listener;
     }
 
     @Override
@@ -37,6 +41,30 @@ public class ViewerAdapter extends RecyclerView.Adapter<ViewerAdapter.AudianceVi
     public void onBindViewHolder(AudianceViewHolder holder, int position) {
         Audiance audiance = list_audiance.get(position);
 
+        if(audiance == null)
+            return;
+
+        if(audiance.getUsername() != null)
+            holder.txt_username.setText(audiance.getUsername());
+
+        try{
+            holder.layout_user.addView(audiance.getSubscriber().getView());
+            audiance.getSubscriber().setStyle(BaseVideoRenderer.STYLE_VIDEO_SCALE, BaseVideoRenderer.STYLE_VIDEO_FILL);
+//            if((audiance.getSubscriber().getView() != null))
+//                holder.layout_user.addView(audiance.getSubscriber().getView());
+
+            ViewGroup view = (ViewGroup) audiance.getSubscriber().getView().getParent();
+//            if (view != null) {
+//                ViewGroup parent = (ViewGroup) view.getParent();
+//                if (parent != null) {
+//                    parent.removeView(view);
+//                }
+//            }
+            holder.layout_user.addView(view);
+
+        }catch (Exception exp){
+            exp.printStackTrace();
+        }
     }
 
     @Override
@@ -52,6 +80,13 @@ public class ViewerAdapter extends RecyclerView.Adapter<ViewerAdapter.AudianceVi
 
             layout_user = (FrameLayout) itemView.findViewById(R.id.layout_user);
             txt_username = (TextView) itemView.findViewById(R.id.txt_username);
+            itemView.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    if(listener!=null)
+                        listener.onItemClickListener(getAdapterPosition());
+                }
+            });
         }
     }
 }
